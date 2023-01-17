@@ -21,7 +21,7 @@ src_list = natsort.natsorted(src_list)
 src_num = len(src_list)
 
 # world img import
-world_img = cv2.imread('/home/hnpark/data/IceLinkHalf.png')
+world_img = cv2.imread('/home/hnpark/data/IceLinkHalf_old.png')
 
 
 # calc viewer row
@@ -64,12 +64,18 @@ world_pts.append((int(wx2), int(wy2)))
 world_pts.append((int(wx3), int(wy3)))
 world_pts.append((int(wx4), int(wy4)))
 
-
+# world pts
+world_view = cv2.circle(world_img, world_pts[1], 4, (0, 0, 255), 2)
+world_view = cv2.circle(world_img, world_pts[2], 4, (0, 255, 255), 2)
+world_view = cv2.circle(world_img, world_pts[3], 4, (0, 255, 0), 2)
+world_view = cv2.circle(world_img, world_pts[4], 4, (255, 0, 0), 2)
 
 # save images & resize
 for i in src_list:
     img = cv2.imread(src_path + i)
     img_rsz = cv2.resize(img, (0, 0), fx=resize_rate, fy=resize_rate, interpolation=cv2.INTER_AREA)
+    name, ext = os.path.splitext(i)
+    cv2.putText(img_rsz, name, (10,10), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255) )
     # draw pts
     # src.append(img_rsz)
     #print(points[src_list.index(i)][1])
