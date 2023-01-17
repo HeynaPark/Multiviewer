@@ -72,24 +72,24 @@ world_view = cv2.circle(world_img, world_pts[4], 4, (255, 0, 0), 2)
 
 # save images & resize
 for i in src_list:
+    index = src_list.index(i)
     img = cv2.imread(src_path + i)
     img_rsz = cv2.resize(img, (0, 0), fx=resize_rate, fy=resize_rate, interpolation=cv2.INTER_AREA)
-    name, ext = os.path.splitext(i)
-    cv2.putText(img_rsz, name, (10,10), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255) )
+    #name, ext = os.path.splitext(i)
+    cv2.putText(img_rsz, str(index), (10,25), cv2.FONT_HERSHEY_DUPLEX, 1, (255,255,255) )
     # draw pts
     # src.append(img_rsz)
     #print(points[src_list.index(i)][1])
-    img_pts = cv2.circle(img_rsz, points[src_list.index(i)][1], 2, (0, 0, 255), -1)
-    img_pts = cv2.circle(img_rsz, points[src_list.index(i)][2], 2, (0, 255, 255), -1)
-    img_pts = cv2.circle(img_rsz, points[src_list.index(i)][3], 2, (0, 255, 0), -1)
-    img_pts = cv2.circle(img_rsz, points[src_list.index(i)][4], 2, (255, 0, 0), -1)
+    img_pts = cv2.circle(img_rsz, points[index][1], 2, (0, 0, 255), -1)
+    img_pts = cv2.circle(img_rsz, points[index][2], 2, (0, 255, 255), -1)
+    img_pts = cv2.circle(img_rsz, points[index][3], 2, (0, 255, 0), -1)
+    img_pts = cv2.circle(img_rsz, points[index][4], 2, (255, 0, 0), -1)
     src.append(img_pts)
 
 
 # tile to multiview
 def concat_tile(im_list_2d):
     return cv2.vconcat([cv2.hconcat(im_list_h) for im_list_h in im_list_2d])
-
 
 single_view = [[0 for j in range(multiview_row)] for i in range(multiview_row)]
 cnt_view = 0
@@ -102,6 +102,12 @@ for r in range(multiview_row):
         cnt_view += 1
 
 multi_view = concat_tile(single_view)
+
+# key press event
+key_command = " Single Main View " \
+              ": Press 'cam number' + 'Enter'. "
+cv2.putText(multi_view, key_command, (100,multi_view.shape[0]-200), cv2.FONT_HERSHEY_DUPLEX, 1, (0,255,0))
+
 cv2.imshow("multi view", multi_view)
 cv2.imshow("world view", world_img)
 cv2.waitKey(0)
