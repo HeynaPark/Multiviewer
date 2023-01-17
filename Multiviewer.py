@@ -68,7 +68,7 @@ for i in src_list:
     img_rsz = cv2.resize(img, (0, 0), fx=resize_rate, fy=resize_rate, interpolation=cv2.INTER_AREA)
     # draw pts
     # src.append(img_rsz)
-    print(points[src_list.index(i)][1])
+    #print(points[src_list.index(i)][1])
     img_pts = cv2.circle(img_rsz, points[src_list.index(i)][1], 2, (0, 0, 255), -1)
     img_pts = cv2.circle(img_rsz, points[src_list.index(i)][2], 2, (0, 255, 255), -1)
     img_pts = cv2.circle(img_rsz, points[src_list.index(i)][3], 2, (0, 255, 0), -1)
