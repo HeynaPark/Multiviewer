@@ -20,6 +20,10 @@ src_list = os.listdir(src_path)
 src_list = natsort.natsorted(src_list)
 src_num = len(src_list)
 
+# world img import
+world_img = cv2.imread('/home/hnpark/data/IceLinkHalf.png')
+
+
 # calc viewer row
 multiview_row = 1
 while 1:
@@ -93,6 +97,7 @@ for r in range(multiview_row):
 
 multi_view = concat_tile(single_view)
 cv2.imshow("multi view", multi_view)
+cv2.imshow("world view", world_img)
 cv2.waitKey(0)
 
 
