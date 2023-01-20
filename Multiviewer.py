@@ -230,12 +230,13 @@ print(src_num)
 for i in range(src_num):
     print(i)
     h[i] = findHomo_wtos(i)
-# print("h", h)
-# print(len(h))
 
-#warp_point = calcPointHomo(h0, cur_point)
-#print("warp point: 2" , warp_point)
 
+# 3d world view
+world_3d_idx = 18
+world_3d = cv2.warpPerspective(world_view, h[world_3d_idx], (1920,1080))
+world_3d_rsz = cv2.resize(world_3d,(0,0),world_3d,fx=0.5, fy=0.5)
+cv2.imshow("3d world view", world_3d_rsz)
 
 
 cv2.waitKey()
