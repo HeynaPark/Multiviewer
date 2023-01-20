@@ -101,16 +101,19 @@ for i in src_list:
 def concat_tile(im_list_2d):
     return cv2.vconcat([cv2.hconcat(im_list_h) for im_list_h in im_list_2d])
 
-single_view = [[0 for j in range(multiview_row)] for i in range(multiview_row)]
-cnt_view = 0
-for r in range(multiview_row):
-    for c in range(multiview_row):
-        if cnt_view < src_num:
-            single_view[r][c] = src[cnt_view]
-        else:   # black screen
-            single_view[r][c] = np.zeros((src[0].shape[0], src[0].shape[1], 3), dtype=src[0].dtype)
-        cnt_view += 1
 
+single_view = [[0 for j in range(multiview_row)] for i in range(multiview_row)]
+def makeMultiView():
+    cnt_view = 0
+    for r in range(multiview_row):
+        for c in range(multiview_row):
+            if cnt_view < src_num:
+                single_view[r][c] = src[cnt_view]
+            else:   # black screen
+                single_view[r][c] = np.zeros((src[0].shape[0], src[0].shape[1], 3), dtype=src[0].dtype)
+            cnt_view += 1
+
+makeMultiView()
 multi_view = concat_tile(single_view)
 
 
@@ -118,11 +121,11 @@ multi_view = concat_tile(single_view)
 key_command = " Single Main View " \
               ": Press 'cam number' + 'Enter'. "
 cv2.putText(multi_view, key_command, (100,multi_view.shape[0]-200), cv2.FONT_HERSHEY_DUPLEX, 1, (0,255,0))
-#cv2.imshow("multi view", multi_view)
+cv2.imshow("multi view", multi_view)
 cv2.imshow("world view", world_view)
 #cv2.waitKey(0)
 
-single_index = 10
+single_index = 18
 main_single_view = src_raw[single_index]
 cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
 cv2.imshow("main view", main_single_view)
@@ -135,22 +138,39 @@ def onMouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         cur_point.x = x
         cur_point.y = y
-        color = np.random.randint(0, 255, size=(3, ))
-        color = (int(color[0]), int(color[1]), int(color[2]))
-        print(color)
-        warp_p = calcPointHomo(h0, cur_point)
-        print("warp point 1:" , warp_p)
-        cv2.circle(world_view, warp_p, 10, tuple(color), 3)
-        cv2.circle(main_single_view, (x, y), 10, color, 3)
-        # cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
-        # cv2.circle(main_single_view, (x, y), 10, (0, 255, 200), 3)
-        cv2.imshow("world view", world_view)
-        cv2.imshow("main view", main_single_view)
-
+        drawWarpPoint(cur_point)
 
 cv2.namedWindow("main view")
 cv2.setMouseCallback("main view", onMouse)
 cv2.setMouseCallback("world view", onMouse)
+cv2.setMouseCallback("multi view", onMouse)
+
+def drawWarpPoint(cur_point):
+    color = np.random.randint(155, 255, size=(3,))
+    color = (int(color[0]), int(color[1]), int(color[2]))
+    warp_p = calcPointHomo(h0, cur_point)
+    cv2.circle(main_single_view, (cur_point.x, cur_point.y), 10, color, 3)
+    cv2.circle(world_view, warp_p, 10, tuple(color), 3)
+    # cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
+    # cv2.circle(main_single_view, (x, y), 10, (0, 255, 200), 3)
+    cv2.imshow("main view", main_single_view)
+    cv2.imshow("world view", world_view)
+
+    # to multiview
+    wp = Point()
+    wp.x = warp_p[0]
+    wp.y = warp_p[1]
+    warp_p_multi = []
+    for i in range(src_num):
+        warp_single_p = calcPointHomo(h[i], wp)
+        print("warp_single_p ", i, "   ", warp_single_p)
+        warp_p_multi.append(warp_single_p)
+        cv2.circle(src[i], (int(warp_single_p[0] * resize_rate),(int(warp_single_p[1]* resize_rate))), 2, tuple(color), 3)
+    makeMultiView()
+    multi_view = concat_tile(single_view)
+    cv2.imshow("multi view", multi_view)
+
+
 
 
 # while True:
@@ -168,6 +188,8 @@ for i in range(1,5):
     world_points.append(p)
 dst_pts = np.array([[e.x,e.y] for e in world_points])
 print("dst pts: ", dst_pts)
+
+
 def findHomo(cam_idx):
     points = list()
     for i in range(1,5):
@@ -180,6 +202,20 @@ def findHomo(cam_idx):
     H, status = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
     print("homo matrix: ", H)
     return H
+
+def findHomo_wtos(cam_idx):
+    points = list()
+    for i in range(1,5):
+        p = Point()
+        p.x = src_points[cam_idx][i][0]
+        p.y = src_points[cam_idx][i][1]
+        points.append(p)
+    src_pts = np.array([[e.x,e.y] for e in points])
+    print(src_pts)
+    H, status = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC)
+    print("homo matrix: ", H)
+    return H
+
 def calcPointHomo(H, pts):
     x = (H[0][0] * pts.x + H[0][1] * pts.y + H[0][2]) / (H[2][0]*pts.x + H[2][1]*pts.y + 1)
     y = (H[1][0] * pts.x + H[1][1] * pts.y + H[1][2]) / (H[2][0]*pts.x + H[2][1]*pts.y + 1)
@@ -187,7 +223,15 @@ def calcPointHomo(H, pts):
 
 h0 = []
 h0 = findHomo(single_index)
-#print(h0)
+print(h0)
+
+h = [[0 for j in range(9)] for i in range(src_num)]
+print(src_num)
+for i in range(src_num):
+    print(i)
+    h[i] = findHomo_wtos(i)
+# print("h", h)
+# print(len(h))
 
 #warp_point = calcPointHomo(h0, cur_point)
 #print("warp point: 2" , warp_point)
