@@ -122,7 +122,7 @@ cv2.putText(multi_view, key_command, (100,multi_view.shape[0]-200), cv2.FONT_HER
 cv2.imshow("world view", world_view)
 #cv2.waitKey(0)
 
-single_index = 0
+single_index = 10
 main_single_view = src_raw[single_index]
 cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
 cv2.imshow("main view", main_single_view)
@@ -135,12 +135,17 @@ def onMouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         cur_point.x = x
         cur_point.y = y
-        cv2.circle(main_single_view, (x,y), 10, (0, 255,200), 3)
-        cv2.imshow("main view", main_single_view)
+        color = np.random.randint(0, 255, size=(3, ))
+        color = (int(color[0]), int(color[1]), int(color[2]))
+        print(color)
         warp_p = calcPointHomo(h0, cur_point)
         print("warp point 1:" , warp_p)
-        cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
+        cv2.circle(world_view, warp_p, 10, tuple(color), 3)
+        cv2.circle(main_single_view, (x, y), 10, color, 3)
+        # cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
+        # cv2.circle(main_single_view, (x, y), 10, (0, 255, 200), 3)
         cv2.imshow("world view", world_view)
+        cv2.imshow("main view", main_single_view)
 
 
 cv2.namedWindow("main view")
@@ -181,7 +186,7 @@ def calcPointHomo(H, pts):
     return (int(x),int(y))
 
 h0 = []
-h0 = findHomo(0)
+h0 = findHomo(single_index)
 #print(h0)
 
 #warp_point = calcPointHomo(h0, cur_point)
