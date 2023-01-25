@@ -176,13 +176,14 @@ def setWorldPts(pts, cnt):
     cnt += 1
 
 
-
+color_set = (200,200,100)
 def drawWarpPoint(cur_point):
     color = np.random.randint(155, 255, size=(3,))
     color = (int(color[0]), int(color[1]), int(color[2]))
-    warp_p = calcPointHomo(h[single_index], cur_point)
-    cv2.circle(main_single_view, (cur_point.x, cur_point.y), 5, color, 2)
-    cv2.circle(world_view, warp_p, 3, tuple(color), 2)
+    warp_p = calcPointHomo(h_sw[single_index], cur_point)
+    cv2.circle(main_single_view, (cur_point.x, cur_point.y), 5, color_set, 2)
+    cv2.circle(world_view, warp_p, 3, color_set, 2)
+    # cv2.circle(world_view, warp_p, 3, tuple(color), 2)
     # cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
     # cv2.circle(main_single_view, (x, y), 10, (0, 255, 200), 3)
     cv2.imshow("main view", main_single_view)
@@ -193,14 +194,14 @@ def drawWarpPoint(cur_point):
     wp.x = warp_p[0]
     wp.y = warp_p[1]
     warp_p_multi = []
-    # for i in range(src_num):
-    #     warp_single_p = calcPointHomo(h[i], wp)
-    #     #print("warp_single_p ", i, "   ", warp_single_p)
-    #     warp_p_multi.append(warp_single_p)
-    #     cv2.circle(src[i], (int(warp_single_p[0] * resize_rate),(int(warp_single_p[1]* resize_rate))), 2, tuple(color), 3)
-    # makeMultiView()
-    # multi_view = concat_tile(single_view)
-    # cv2.imshow("multi view", multi_view)
+    for i in range(src_num):
+        warp_single_p = calcPointHomo(h_ws[i], wp)
+        #print("warp_single_p ", i, "   ", warp_single_p)
+        warp_p_multi.append(warp_single_p)
+        cv2.circle(src[i], (int(warp_single_p[0] * resize_rate),(int(warp_single_p[1]* resize_rate))), 2, color_set, 3)
+    makeMultiView()
+    multi_view = concat_tile(single_view)
+    cv2.imshow("multi view", multi_view)
 
 
 
@@ -257,26 +258,31 @@ h0 = []
 h0 = findHomo(single_index)
 print(h0)
 
-h = [[0 for j in range(9)] for i in range(src_num)]
-print(src_num)
+h_sw = [[0 for j in range(9)] for i in range(src_num)]
 for i in range(src_num):
     print(i)
-    h[i] = findHomo(i)
+    h_sw[i] = findHomo(i)
+
+h_ws = [[0 for j in range(9)] for i in range(src_num)]
+for i in range(src_num):
+    print(i)
+    h_ws[i] = findHomo_wtos(i)
 
 
 # 3d world view
 world_3d_idx = 5
-world_3d = cv2.warpPerspective(world_view, h[world_3d_idx], (1920,1080))
+world_3d = cv2.warpPerspective(world_view, h_ws[world_3d_idx], (1920,1080))
 world_3d_rsz = cv2.resize(world_3d,(0,0),world_3d,fx=0.5, fy=0.5)
 # cv2.imshow("3d world view", world_3d_rsz)
 
 
 # key event
 while True:
-    if cv2.waitKey(0) &0xFF == 27:
+    key = cv2.waitKey()
+    if key &0xFF == 27:
         break
 
-    key = cv2.waitKey()
+
     if key == ord('a'):
         if single_index<1:
             single_index = src_num-1
@@ -288,13 +294,25 @@ while True:
         else:
             single_index += 1
 
+    if key == 49:
+        color_set = (125,20,255)
+    elif key == 50:
+        color_set = (0,70,255)
+    elif key == 51:
+        color_set = (0, 250, 122)
+    elif key == 52:
+        color_set = (200, 0, 190)
+
     print(single_index)
     main_single_view = src_raw[single_index]
     cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
     cv2.imshow("main view", main_single_view)
 
+    if key == ord('s'):
+        cv2.imwrite("world_result.png", world_view)
 
-cv2.waitKey()
+
+#cv2.waitKey()
 cv2.destroyAllWindows()
 
 
