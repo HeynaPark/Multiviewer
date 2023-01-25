@@ -28,7 +28,7 @@ src_num = len(src_list)
 
 
 # world img import
-world_img = cv2.imread('/home/hnpark/data/IceLinkHalf_old.png')
+world_img = cv2.imread('/home/hnpark/data/IceLink.png')
 
 
 # calc viewer row & resize rate
@@ -68,10 +68,14 @@ wy1 = json_data['world_coords']['Y1']
 wy2 = json_data['world_coords']['Y2']
 wy3 = json_data['world_coords']['Y3']
 wy4 = json_data['world_coords']['Y4']
-world_pts.append((int(wx1), int(wy1)))
-world_pts.append((int(wx2), int(wy2)))
-world_pts.append((int(wx3), int(wy3)))
-world_pts.append((int(wx4), int(wy4)))
+# world_pts.append((int(wx1), int(wy1)))
+# world_pts.append((int(wx2), int(wy2)))
+# world_pts.append((int(wx3), int(wy3)))
+# world_pts.append((int(wx4), int(wy4)))
+world_pts.append((654,510))
+world_pts.append((654,296))
+world_pts.append((697,296))
+world_pts.append((697,510))
 
 
 # draw world pts
@@ -125,7 +129,7 @@ cv2.imshow("multi view", multi_view)
 cv2.imshow("world view", world_view)
 #cv2.waitKey(0)
 
-single_index = 18
+single_index = 0
 main_single_view = src_raw[single_index]
 cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
 cv2.imshow("main view", main_single_view)
@@ -133,24 +137,52 @@ cv2.imshow("main view", main_single_view)
 
 cur_point = Point()
 warp_point = Point()
+cntClick = 0
+
 # mouse event
 def onMouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         cur_point.x = x
         cur_point.y = y
         drawWarpPoint(cur_point)
+        #setWorldPts(cur_point, cntClick)
 
 cv2.namedWindow("main view")
 cv2.setMouseCallback("main view", onMouse)
 cv2.setMouseCallback("world view", onMouse)
 cv2.setMouseCallback("multi view", onMouse)
 
+
+
+def setWorldPts(pts, cnt):
+    if cnt>3:
+        cnt = 0
+    world_pts[cnt] = pts
+    color = (255,255,255)
+    if cnt ==0:
+        color = (0,0,255)
+    elif cnt ==1:
+        color = (0,255,255)
+    elif cnt ==2:
+        color = (0,255,0)
+    elif cnt ==3:
+        color = (255,0,0)
+
+    cv2.circle(world_view, (pts.x, pts.y), 2 ,color, 1)
+    cv2.imshow("world view", world_view)
+
+    print(pts.x," , ", pts.y)
+
+    cnt += 1
+
+
+
 def drawWarpPoint(cur_point):
     color = np.random.randint(155, 255, size=(3,))
     color = (int(color[0]), int(color[1]), int(color[2]))
-    warp_p = calcPointHomo(h0, cur_point)
-    cv2.circle(main_single_view, (cur_point.x, cur_point.y), 10, color, 3)
-    cv2.circle(world_view, warp_p, 10, tuple(color), 3)
+    warp_p = calcPointHomo(h[single_index], cur_point)
+    cv2.circle(main_single_view, (cur_point.x, cur_point.y), 5, color, 2)
+    cv2.circle(world_view, warp_p, 3, tuple(color), 2)
     # cv2.circle(world_view, warp_p, 10, (90, 155, 100), 3)
     # cv2.circle(main_single_view, (x, y), 10, (0, 255, 200), 3)
     cv2.imshow("main view", main_single_view)
@@ -161,14 +193,14 @@ def drawWarpPoint(cur_point):
     wp.x = warp_p[0]
     wp.y = warp_p[1]
     warp_p_multi = []
-    for i in range(src_num):
-        warp_single_p = calcPointHomo(h[i], wp)
-        print("warp_single_p ", i, "   ", warp_single_p)
-        warp_p_multi.append(warp_single_p)
-        cv2.circle(src[i], (int(warp_single_p[0] * resize_rate),(int(warp_single_p[1]* resize_rate))), 2, tuple(color), 3)
-    makeMultiView()
-    multi_view = concat_tile(single_view)
-    cv2.imshow("multi view", multi_view)
+    # for i in range(src_num):
+    #     warp_single_p = calcPointHomo(h[i], wp)
+    #     #print("warp_single_p ", i, "   ", warp_single_p)
+    #     warp_p_multi.append(warp_single_p)
+    #     cv2.circle(src[i], (int(warp_single_p[0] * resize_rate),(int(warp_single_p[1]* resize_rate))), 2, tuple(color), 3)
+    # makeMultiView()
+    # multi_view = concat_tile(single_view)
+    # cv2.imshow("multi view", multi_view)
 
 
 
@@ -229,14 +261,37 @@ h = [[0 for j in range(9)] for i in range(src_num)]
 print(src_num)
 for i in range(src_num):
     print(i)
-    h[i] = findHomo_wtos(i)
+    h[i] = findHomo(i)
 
 
 # 3d world view
-world_3d_idx = 18
+world_3d_idx = 5
 world_3d = cv2.warpPerspective(world_view, h[world_3d_idx], (1920,1080))
 world_3d_rsz = cv2.resize(world_3d,(0,0),world_3d,fx=0.5, fy=0.5)
-cv2.imshow("3d world view", world_3d_rsz)
+# cv2.imshow("3d world view", world_3d_rsz)
+
+
+# key event
+while True:
+    if cv2.waitKey(0) &0xFF == 27:
+        break
+
+    key = cv2.waitKey()
+    if key == ord('a'):
+        if single_index<1:
+            single_index = src_num-1
+        else:
+            single_index -= 1
+    elif key == ord('d'):
+        if single_index>=src_num-1:
+            single_index = 0
+        else:
+            single_index += 1
+
+    print(single_index)
+    main_single_view = src_raw[single_index]
+    cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
+    cv2.imshow("main view", main_single_view)
 
 
 cv2.waitKey()
