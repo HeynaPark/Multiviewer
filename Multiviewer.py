@@ -126,6 +126,7 @@ key_command = " Single Main View " \
               ": Press 'cam number' + 'Enter'. "
 cv2.putText(multi_view, key_command, (100,multi_view.shape[0]-200), cv2.FONT_HERSHEY_DUPLEX, 1, (0,255,0))
 cv2.imshow("multi view", multi_view)
+world_rsz = cv2.resize(world_view,(1600,1600))
 cv2.imshow("world view", world_view)
 #cv2.waitKey(0)
 
@@ -270,10 +271,20 @@ for i in range(src_num):
 
 
 # 3d world view
-world_3d_idx = 5
-world_3d = cv2.warpPerspective(world_view, h_ws[world_3d_idx], (1920,1080))
-world_3d_rsz = cv2.resize(world_3d,(0,0),world_3d,fx=0.5, fy=0.5)
-# cv2.imshow("3d world view", world_3d_rsz)
+wid_rate = 0.3  #the length of the horizontal margin
+hei_rate = 0.4  #the length of the vertical margin
+world_len = 1600    #world map *2
+pts1 = np.float32([[0,0],[world_len,0],[0,world_len],[world_len,world_len]])        # plane
+pts2 = np.float32([[world_len*wid_rate,world_len*hei_rate],
+                   [world_len*(1-wid_rate),world_len*hei_rate],
+                   [0,world_len],
+                   [world_len,world_len]])  # perspective
+mtrx = cv2.getPerspectiveTransform(pts1,pts2)
+world_3d = cv2.warpPerspective(world_rsz, mtrx, ((world_rsz.shape[:2])))
+print(400*hei_rate)
+world_3d_view = world_3d[int(400):world_len-400, 0:world_len].copy()   # icehockey rect
+#world_3d_rsz = cv2.resize(world_3d_view,(1600,240),world_3d)
+cv2.imshow("3d world view", world_3d_view)
 
 
 # key event
