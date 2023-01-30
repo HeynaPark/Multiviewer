@@ -9,7 +9,6 @@ import natsort
 
 src = []
 src_raw = []
-#calib = None
 src_w = 1920
 src_h = 1080
 cam_pts = []
@@ -68,10 +67,6 @@ wy1 = json_data['world_coords']['Y1']
 wy2 = json_data['world_coords']['Y2']
 wy3 = json_data['world_coords']['Y3']
 wy4 = json_data['world_coords']['Y4']
-# world_pts.append((int(wx1), int(wy1)))
-# world_pts.append((int(wx2), int(wy2)))
-# world_pts.append((int(wx3), int(wy3)))
-# world_pts.append((int(wx4), int(wy4)))
 world_pts.append((654,510))
 world_pts.append((654,296))
 world_pts.append((697,296))
@@ -172,8 +167,6 @@ def setWorldPts(pts, cnt):
     cv2.circle(world_view, (pts.x, pts.y), 2 ,color, 1)
     cv2.imshow("world view", world_view)
 
-    print(pts.x," , ", pts.y)
-
     cnt += 1
 
 
@@ -205,13 +198,6 @@ def drawWarpPoint(cur_point):
     cv2.imshow("multi view", multi_view)
 
 
-
-
-# while True:
-#     if cv2.waitKey(0) &0xFF == 27:
-#         break
-
-
 # calc warp point
 dst_pts = []
 world_points = list()
@@ -221,7 +207,7 @@ for i in range(1,5):
     p.y = world_pts[i][1]
     world_points.append(p)
 dst_pts = np.array([[e.x,e.y] for e in world_points])
-print("dst pts: ", dst_pts)
+# print("dst pts: ", dst_pts)
 
 
 def findHomo(cam_idx):
@@ -232,9 +218,9 @@ def findHomo(cam_idx):
         p.y = src_points[cam_idx][i][1]
         points.append(p)
     src_pts = np.array([[e.x,e.y] for e in points])
-    print(src_pts)
+    # print(src_pts)
     H, status = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
-    print("homo matrix: ", H)
+    # print("homo matrix: ", H)
     return H
 
 def findHomo_wtos(cam_idx):
@@ -245,9 +231,9 @@ def findHomo_wtos(cam_idx):
         p.y = src_points[cam_idx][i][1]
         points.append(p)
     src_pts = np.array([[e.x,e.y] for e in points])
-    print(src_pts)
+    # print(src_pts)
     H, status = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC)
-    print("homo matrix: ", H)
+    # print("homo matrix: ", H)
     return H
 
 def calcPointHomo(H, pts):
@@ -255,41 +241,76 @@ def calcPointHomo(H, pts):
     y = (H[1][0] * pts.x + H[1][1] * pts.y + H[1][2]) / (H[2][0]*pts.x + H[2][1]*pts.y + 1)
     return (int(x),int(y))
 
-h0 = []
-h0 = findHomo(single_index)
-print(h0)
-
 h_sw = [[0 for j in range(9)] for i in range(src_num)]
 for i in range(src_num):
-    print(i)
     h_sw[i] = findHomo(i)
 
 h_ws = [[0 for j in range(9)] for i in range(src_num)]
 for i in range(src_num):
-    print(i)
     h_ws[i] = findHomo_wtos(i)
 
 
 # 3d world view
-wid_rate = 0.3  #the length of the horizontal margin
-hei_rate = 0.4  #the length of the vertical margin
-world_len = 1600    #world map *2
-pts1 = np.float32([[0,0],[world_len,0],[0,world_len],[world_len,world_len]])        # plane
-pts2 = np.float32([[world_len*wid_rate,world_len*hei_rate],
-                   [world_len*(1-wid_rate),world_len*hei_rate],
-                   [0,world_len],
-                   [world_len,world_len]])  # perspective
-mtrx = cv2.getPerspectiveTransform(pts1,pts2)
-world_3d = cv2.warpPerspective(world_rsz, mtrx, ((world_rsz.shape[:2])))
-print(400*hei_rate)
-world_3d_view = world_3d[int(400):world_len-400, 0:world_len].copy()   # icehockey rect
-#world_3d_rsz = cv2.resize(world_3d_view,(1600,240),world_3d)
-cv2.imshow("3d world view", world_3d_view)
+cv2.namedWindow("3d world view")
+c_h = 4
+c_d = 3
+world_l = 1200
+
+cv2.createTrackbar("dx", "3d world view", 0, 400, lambda x:x)
+cv2.createTrackbar("dy", "3d world view",0 , 700,lambda x:x)
+
+cv2.setTrackbarPos("dx", "3d world view", 150)
+cv2.setTrackbarPos("dy", "3d world view", 300)
+
+world_cut = world_rsz[400:world_l, 0:1600].copy()
+#after cutting
+wp1 = [0,0]
+wp2 = [world_cut.shape[1], wp1[1]]
+wp3 = [wp1[0], world_cut.shape[0]]
+wp4 = [wp2[0], wp3[1]]
+
+def view3Dworld():
+    dx = cv2.getTrackbarPos("dx", "3d world view")
+    dy = cv2.getTrackbarPos("dy", "3d world view")
+
+
+     # world map *2
+    p1 = np.float32([wp1, wp2, wp3, wp4])  # plane
+
+    p2 = np.float32([[wp1[0]+dx, wp1[1]+dy],
+                       [wp2[0]-dx, wp2[1]+dy],
+                       wp3,
+                       wp4])  # perspective
+    print("p1 ",p1)
+    print("p2 ",p2)
+    # p1 = np.float32([[0, 0], [world_l, 0], [0, world_l], [world_l, world_l]])  # plane
+    # p2 = np.float32([[world_l * wid_r, world_l * hei_r],
+    #                    [world_l * (1 - wid_r), world_l * hei_r],
+    #                    [0, world_l],
+    #                    [world_l, world_l]])  # perspective
+    mtrx = cv2.getPerspectiveTransform(p1, p2)
+    return mtrx, dx, dy
+    # world_3d = cv2.warpPerspective(world_rsz, mtrx, ((world_rsz.shape[:2])))
+    # print(400 * hei_r)
+    # world_3d_view = world_3d[int(400):world_l - 400, 0:world_l].copy()  # icehockey rect
+    # world_3d_rsz = cv2.resize(world_3d_view,(1600,240),world_3d)
+
+
+# view3Dworld()
 
 
 # key event
 while True:
-    key = cv2.waitKey()
+
+    m, _x, _y = view3Dworld()
+    world_3d = cv2.warpPerspective(world_cut, m, (1600,800))
+    # world_3d_view = world_3d[int(200):world_l - 200, 0:world_l].copy()  # icehockey rect
+    world_3d_cut = world_3d[_y:wp3[1],0:1600].copy()
+    cv2.imshow("3d world view", world_3d_cut)
+    # c_h = cv2.getTrackbarPos("camera height", "3d world view")
+    # c_d = cv2.getTrackbarPos("camera distance", "3d world view")
+
+    key = cv2.waitKey(0)
     if key &0xFF == 27:
         break
 
@@ -313,8 +334,6 @@ while True:
         color_set = (0, 250, 122)
     elif key == 52:
         color_set = (200, 0, 190)
-
-    print(single_index)
     main_single_view = src_raw[single_index]
     cv2.putText(main_single_view, str(single_index), (30, 80), cv2.FONT_HERSHEY_DUPLEX, 3, (255, 255, 255))
     cv2.imshow("main view", main_single_view)
@@ -323,52 +342,5 @@ while True:
         cv2.imwrite("world_result.png", world_view)
 
 
-#cv2.waitKey()
+
 cv2.destroyAllWindows()
-
-
-# click = False
-# pos_x, pos_y = -1, -1
-# def draw_rectangle(event, x, y, flags, param):
-#     global pos_x, pos_y, click
-#
-#     if event == cv2.EVENT_LBUTTONDOWN:
-#         click = True
-#         pos_x , pos_y = x, y
-#     elif event == cv2.EVENT_MOUSEMOVE:
-#         if click ==True:
-#             cv2.rectangle(main_single_view, (pos_x, pos_y), (x,y), (255,0,0), 2)
-#     elif event == cv2.EVENT_LBUTTONUP:
-#         click = False
-#         cv2.rectangle(main_single_view, (pos_x, pos_y), (x,y), (255,0,0), 2)
-#
-# cv2.namedWindow("main view")
-# cv2.setMouseCallback("main view", draw_rectangle)
-# cv2.imshow("main view", main_single_view)
-# cv2.waitKey()
-
-
-# key press event
-# main_view_num = 0
-#
-# cam_idx = 0
-# while True:
-#
-#     key = cv2.waitKey()
-#     if key in range(48,58):
-#         cam_idx = key - 48
-#     elif key == 13:
-#         print(cam_idx)
-#     elif key == ord('q'):
-#         break
-
-
-# cv2.imshow("multi view", multi_view)
-# #cv2.imshow("world view", world_img)
-# cv2.waitKey(0)
-
-
-
-
-                                        
-
