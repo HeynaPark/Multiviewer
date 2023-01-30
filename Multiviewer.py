@@ -57,7 +57,6 @@ for i in range(src_num):
     src_points[i][2] = (x2, y2)
     src_points[i][3] = (x3, y3)
     src_points[i][4] = (x4, y4)
-print(src_points)
 world_pts.append(json_data['stadium'])
 wx1 = json_data['world_coords']['X1']
 wx2 = json_data['world_coords']['X2']
@@ -121,7 +120,6 @@ key_command = " Single Main View " \
               ": Press 'cam number' + 'Enter'. "
 cv2.putText(multi_view, key_command, (100,multi_view.shape[0]-200), cv2.FONT_HERSHEY_DUPLEX, 1, (0,255,0))
 cv2.imshow("multi view", multi_view)
-world_rsz = cv2.resize(world_view,(1600,1600))
 cv2.imshow("world view", world_view)
 #cv2.waitKey(0)
 
@@ -262,6 +260,7 @@ cv2.createTrackbar("dy", "3d world view",0 , 700,lambda x:x)
 cv2.setTrackbarPos("dx", "3d world view", 150)
 cv2.setTrackbarPos("dy", "3d world view", 300)
 
+world_rsz = cv2.resize(world_view,(1600,1600))
 world_cut = world_rsz[400:world_l, 0:1600].copy()
 #after cutting
 wp1 = [0,0]
@@ -270,45 +269,28 @@ wp3 = [wp1[0], world_cut.shape[0]]
 wp4 = [wp2[0], wp3[1]]
 
 def view3Dworld():
+
     dx = cv2.getTrackbarPos("dx", "3d world view")
     dy = cv2.getTrackbarPos("dy", "3d world view")
 
-
-     # world map *2
     p1 = np.float32([wp1, wp2, wp3, wp4])  # plane
-
     p2 = np.float32([[wp1[0]+dx, wp1[1]+dy],
                        [wp2[0]-dx, wp2[1]+dy],
                        wp3,
                        wp4])  # perspective
-    print("p1 ",p1)
-    print("p2 ",p2)
-    # p1 = np.float32([[0, 0], [world_l, 0], [0, world_l], [world_l, world_l]])  # plane
-    # p2 = np.float32([[world_l * wid_r, world_l * hei_r],
-    #                    [world_l * (1 - wid_r), world_l * hei_r],
-    #                    [0, world_l],
-    #                    [world_l, world_l]])  # perspective
     mtrx = cv2.getPerspectiveTransform(p1, p2)
     return mtrx, dx, dy
-    # world_3d = cv2.warpPerspective(world_rsz, mtrx, ((world_rsz.shape[:2])))
-    # print(400 * hei_r)
-    # world_3d_view = world_3d[int(400):world_l - 400, 0:world_l].copy()  # icehockey rect
-    # world_3d_rsz = cv2.resize(world_3d_view,(1600,240),world_3d)
-
-
-# view3Dworld()
 
 
 # key event
 while True:
-
     m, _x, _y = view3Dworld()
+    world_rsz = cv2.resize(world_view, (1600, 1600))
+    world_cut = world_rsz[400:world_l, 0:1600].copy()
     world_3d = cv2.warpPerspective(world_cut, m, (1600,800))
-    # world_3d_view = world_3d[int(200):world_l - 200, 0:world_l].copy()  # icehockey rect
     world_3d_cut = world_3d[_y:wp3[1],0:1600].copy()
     cv2.imshow("3d world view", world_3d_cut)
-    # c_h = cv2.getTrackbarPos("camera height", "3d world view")
-    # c_d = cv2.getTrackbarPos("camera distance", "3d world view")
+
 
     key = cv2.waitKey(0)
     if key &0xFF == 27:
