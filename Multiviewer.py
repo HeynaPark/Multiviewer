@@ -3,6 +3,7 @@ import numpy as np
 import os
 import json
 import natsort
+import copy
 
 src = []
 src_raw = []
@@ -131,30 +132,38 @@ world_view = cv2.circle(world_img, world_pts[4], 4, (255, 0, 0), 2)
 
 
 ### detected pts
-detected_pts = [[0,[(1000,500),(400,600),(500,600)]],[1,[(1200,760),(1300,600)]]]
-detected_warp = detected_pts[:]
+detected_pts = [[0,[(1496,803),(622,822),(402,620),(658,714)]],
+                [4,[(366,777),(1135,938),(529,677),(465,529)]],
+                [8,[(522,591),(629,450),(303,642),(707,928),(345,576)]],
+                [10,[(302,664),(551,553),(735,426),(423,199),(39,289),(345,562),(194,192),(416,524),(509,883)]],
+                [15,[(950,115),(76,382),(240,715),(395,506),(245,190),(367,353),(167,401),(523,217),(543,444),(700,171),(1027,400),(721,468),(1027,430),(651,420)]]]
+detected_warp = copy.deepcopy(detected_pts)
+color_pal = [[0,(255,0,0)],[1,(0,150,244)],[2,(0,255,0)],[3,(255,255,0)],[4,(255,0,255)]]
 
 ### save images & resize
-for i in src_list:
-    index = src_list.index(i)
-    img = cv2.imread(src_path + i)
+for file in src_list:
+    index = src_list.index(file)
+    img = cv2.imread(src_path + file)
+
+    ### draw calib pts
     img = cv2.circle(img, (int(src_points[index][1][0]), int(src_points[index][1][1])), 5, (0, 0, 255), -1)
     img = cv2.circle(img, (int(src_points[index][2][0]), int(src_points[index][2][1])), 5, (0, 255, 255), -1)
     img = cv2.circle(img, (int(src_points[index][3][0]), int(src_points[index][3][1])), 5, (0, 255, 0), -1)
     img = cv2.circle(img, (int(src_points[index][4][0]), int(src_points[index][4][1])), 5, (255, 0, 0), -1)
+
     ### save warp p
     for pts in detected_pts:
         if index in pts:
-            for p in detected_pts[index][1]:
-                pdx = detected_pts[index][1].index(p)
-                cv2.circle(img, p, 10, (255,0,255), 3)
+            for p in pts[1]:
+                idx = detected_pts.index(pts)
+                pdx = pts[1].index(p)
+                cv2.circle(img, p, 20, color_pal[idx][1], 10)
+                # cv2.circle(img, p, 10, (0, 255 , 0), -1)
                 _p = Point()
                 _p.x = p[0]
                 _p.y = p[1]
                 warp_p = calcPointHomo(h_sw[index], _p)
-                detected_warp[index][1][pdx] = warp_p
-        else:
-            pass
+                detected_warp[idx][1][pdx] = warp_p
 
     src_raw.append(img)
     img_rsz = cv2.resize(img, (0, 0), fx=resize_rate, fy=resize_rate, interpolation=cv2.INTER_AREA)
@@ -163,11 +172,16 @@ for i in src_list:
 
 
 ### draw detected pts
+color_cnt = 0
 for l in detected_warp:
+    print(l[0])
     for p in l[1]:
-        print(p)
-        cv2.circle(world_view, p, 3, (50,210,240), -1)
+        # print(p)
+        print(color_pal[color_cnt][1])
+        cv2.circle(world_view, p, 3, color_pal[color_cnt][1], -1)
 
+        # cv2.circle(world_view, p, 3, (10*l[0],15*l[0],10*l[0]), -1)
+    color_cnt += 1
 ### tile to multiview
 def concat_tile(im_list_2d):
     return cv2.vconcat([cv2.hconcat(im_list_h) for im_list_h in im_list_2d])
