@@ -12,9 +12,10 @@ src_h = 1080
 cam_pts = []
 world_pts = []
 
+print(os.getcwd())
 
 ### json import (points)
-json_file = open('/home/hnpark/data/1.pts')
+json_file = open('./Multiviewer/data/1.pts')
 json_data = json.load(json_file)
 src_points = [[0 for j in range(5)] for i in range(len(json_data['points']))]
 def importJson():
@@ -95,7 +96,7 @@ def calcPointHomo(H, pts):
     return (int(x),int(y))
 
 ### src img import
-src_path = '/home/hnpark/data/1/'
+src_path = './Multiviewer/data/1/'
 src_list = os.listdir(src_path)
 src_list = natsort.natsorted(src_list)
 src_num = len(src_list)
@@ -120,7 +121,7 @@ while 1:
 resize_rate = 1 / multiview_row
 
 ### world img import
-world_img = cv2.imread('/home/hnpark/data/IceLink.png')
+world_img = cv2.imread('./Multiviewer/data/IceLink.png')
 
 ### draw world pts
 world_view = cv2.circle(world_img, world_pts[1], 4, (0, 0, 255), 2)
@@ -174,10 +175,7 @@ for file in src_list:
 ### draw detected pts
 color_cnt = 0
 for l in detected_warp:
-    print(l[0])
     for p in l[1]:
-        # print(p)
-        print(color_pal[color_cnt][1])
         cv2.circle(world_view, p, 3, color_pal[color_cnt][1], -1)
 
         # cv2.circle(world_view, p, 3, (10*l[0],15*l[0],10*l[0]), -1)
